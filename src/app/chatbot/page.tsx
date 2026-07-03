@@ -70,34 +70,10 @@ const SYSTEM_PROMPT = `أنت مساعد ذكي متقدم بتتكلم بالل
 
 أجب على الأسئلة بشكل مفصل ومفيد. إذا لم تكن متأكداً من معلومة، قل ذلك بوضوح.`;
 
-// API keys rotation (from old HITU project)
-const API_KEYS = [
-  "AIzaSyBN3C93CB-Cog1SycjlGoLWgDzN4deYtoI",
-  "AIzaSyD1tOVALG03EH2rj-pB7vP3nnVRd_qvZ3U",
-  "AIzaSyC_7JP4WCxvmBeIuLcNQYg9ZA9Bgp9SiDQ",
-  "AIzaSyB86pxAvG1BXy3g8D3C8oQ7VSivdxS3MbI",
-  "AIzaSyDPGuCiNDbWF8D3rncXwv_EipMTMTcv4-I",
-  "AIzaSyDcaT51JOe-0_4_H41xqSPPviHmWmMfxj8",
-  "AIzaSyDb9V1vqXcilDJx8D2iHk52--sZhioeG2w",
-  "AIzaSyB4-UD8LcVD7WCN_U2F9u4hqHaP_-BGmRk",
-  "AIzaSyCzxAi7UxnvJFollr0lVaQMd8TfwHj__oo",
-  "AIzaSyDl51ZgJjb5K1kzorMkzDu3PLjWMTMR_co",
-  "AIzaSyDinruhBeVGIy_giyRtfyNnZ8fPxdRqpcE",
-  "AIzaSyC1YC5FFYe16W0QpfAA1PCDmwSlULPYwQw",
-  "AIzaSyDs1QUbBaAnuZpNcd20TQGg5imiBMYV5Jo",
-  "AIzaSyCgWiKSkc_bnldCRAy130TXd5jWsg8qKHI",
-  "AIzaSyD-SM2M0jOOP0BnwAJRbGd5HS3irqOFzqc",
-  "AIzaSyAnJicjY8-aorsNe-tnf-sss5ZWT11cPVo",
-  "AIzaSyCSB4fZ9QSURj-xl37HYqeNUSQUeAwdA2g",
-  "AIzaSyDdGWI0svALRkqbZtub9UfBk9vvmF76OrM",
-  "AIzaSyAoxmkZK8aLjNIWDiQczwTVMcEwJ76gxJw",
-  "AIzaSyCceLxDnjyMAOPbo2JicvlD7K9_miPAQfE",
-];
-let keyIndex = 0;
+const API_KEYS = (process.env.NEXT_PUBLIC_GEMINI_KEYS || '').split(',').filter(Boolean);
 function getNextKey() {
-  const key = API_KEYS[keyIndex];
-  keyIndex = (keyIndex + 1) % API_KEYS.length;
-  return key;
+  const randomIndex = Math.floor(Math.random() * API_KEYS.length);
+  return API_KEYS[randomIndex];
 }
 
 export default function ChatbotPage() {
@@ -140,9 +116,15 @@ export default function ChatbotPage() {
       let botText = 'عذراً، لم أتمكن من الإجابة. حاول مرة أخرى.';
       let fetchSuccess = false;
 
-      // Try up to 5 different API keys if we get errors (like 403 quota exceeded)
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const apiKey = getNextKey();
+      // Try up to 8 different API keys randomly, skip to next if one fails
+      const triedKeys = new Set<string>();
+      for (let attempt = 0; attempt < API_KEYS.length; attempt++) {
+        let apiKey = getNextKey();
+        // Avoid retrying the same key
+        while (triedKeys.has(apiKey) && triedKeys.size < API_KEYS.length) {
+          apiKey = getNextKey();
+        }
+        triedKeys.add(apiKey);
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
           {
@@ -173,7 +155,6 @@ export default function ChatbotPage() {
               })(),
               generationConfig: {
                 maxOutputTokens: 2048,
-                temperature: 0.7,
               },
             }),
           }
