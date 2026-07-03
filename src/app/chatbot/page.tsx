@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Sparkles, ArrowRight, BotMessageSquare } from 'lucide-react';
+import { Send, User, Sparkles } from 'lucide-react';
 interface Message {
   id: string;
   role: 'user' | 'bot';
@@ -104,16 +105,20 @@ export default function ChatbotPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -133,31 +138,27 @@ export default function ChatbotPage() {
     try {
       const apiKey = getNextKey();
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: SYSTEM_PROMPT }]
+            },
             contents: [
-              {
-                role: 'user',
-                parts: [{ text: SYSTEM_PROMPT }],
-              },
-              {
-                role: 'model',
-                parts: [{ text: 'أهلاً! أنا المساعد الذكي لجامعة حلوان التكنولوجية الدولية. اسألني أي سؤال وأنا هجاوبك!' }],
-              },
-              ...messages.map(msg => ({
-                role: msg.role === 'user' ? 'user' as const : 'model' as const,
+              ...messages.filter(msg => msg.content !== 'عذراً، حدث خطأ في الاتصال. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.').map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'model',
                 parts: [{ text: msg.content }],
               })),
               {
-                role: 'user' as const,
+                role: 'user',
                 parts: [{ text: text.trim() }],
               },
             ],
             generationConfig: {
               maxOutputTokens: 2048,
+              temperature: 0.7,
             },
           }),
         }
@@ -205,8 +206,8 @@ export default function ChatbotPage() {
         </div>
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar relative z-10">
-          <div className="mx-auto max-w-3xl space-y-5">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar relative z-10">
+          <div className="mx-auto max-w-3xl space-y-5 pb-6">
             {/* ===== Welcome State ===== */}
             {messages.length === 0 && showSuggestions && (
               <motion.div
@@ -221,9 +222,9 @@ export default function ChatbotPage() {
                   transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
                   className="relative mb-8"
                 >
-                  <div className="absolute inset-0 bg-[#8b5cf6]/30 blur-2xl rounded-full animate-pulse-glow" />
-                  <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-[#8b5cf6] to-[#3b82f6] shadow-2xl shadow-[#8b5cf6]/30 border border-white/10">
-                    <Bot className="h-10 w-10 text-white" />
+                  <div className="absolute inset-0 bg-white/20 dark:bg-[#14b8a6]/20 blur-2xl rounded-full animate-pulse-glow" />
+                  <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-2xl shadow-black/10 border border-black/5 dark:bg-[#111111] dark:border-white/10 p-2">
+                    <Image src="/logo.png" alt="HITU Logo" width={80} height={80} className="rounded-2xl object-contain drop-shadow-md" />
                   </div>
                 </motion.div>
 
@@ -284,9 +285,13 @@ export default function ChatbotPage() {
                   <div className={`shrink-0 flex h-9 w-9 items-center justify-center rounded-xl shadow-lg ${
                     msg.role === 'user'
                       ? 'bg-gradient-to-br from-[#14b8a6] to-[#0d9488] shadow-[#14b8a6]/20'
-                      : 'bg-gradient-to-br from-[#8b5cf6] to-[#6d28d9] shadow-[#8b5cf6]/20'
+                      : 'bg-white shadow-black/5 border border-black/5 dark:bg-[#111111] dark:border-white/10'
                   }`}>
-                    {msg.role === 'user' ? <User className="h-4 w-4 text-white" /> : <BotMessageSquare className="h-4 w-4 text-white" />}
+                    {msg.role === 'user' ? (
+                      <User className="h-4 w-4 text-white" />
+                    ) : (
+                      <Image src="/logo.png" alt="HITU" width={24} height={24} className="rounded-md object-contain" />
+                    )}
                   </div>
 
                   {/* Bubble */}
@@ -313,35 +318,32 @@ export default function ChatbotPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex gap-3 flex-row"
               >
-                <div className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#6d28d9] shadow-lg shadow-[#8b5cf6]/20">
-                  <BotMessageSquare className="h-4 w-4 text-white" />
+                <div className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-lg shadow-black/5 border border-black/5 dark:bg-[#111111] dark:border-white/10">
+                  <Image src="/logo.png" alt="HITU" width={24} height={24} className="rounded-md object-contain opacity-70" />
                 </div>
-                <div className="rounded-2xl rounded-bl-md bg-[#111111]/80 backdrop-blur-xl border border-white/[0.08] px-5 py-4">
+                <div className="rounded-2xl rounded-bl-md bg-white border border-gray-100 shadow-md shadow-black/5 dark:bg-[#111111]/80 dark:backdrop-blur-xl dark:border-white/[0.08] px-5 py-4">
                   <div className="flex gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-[#8b5cf6] animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="h-2 w-2 rounded-full bg-[#8b5cf6] animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="h-2 w-2 rounded-full bg-[#8b5cf6] animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="h-2 w-2 rounded-full bg-[#14b8a6] animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="h-2 w-2 rounded-full bg-[#14b8a6] animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="h-2 w-2 rounded-full bg-[#14b8a6] animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </motion.div>
             )}
-
-            <div ref={messagesEndRef} />
           </div>
         </div>
 
         {/* ===== Input Area ===== */}
         <div className="sticky bottom-0 border-t border-white/[0.06] bg-[#050505]/90 backdrop-blur-2xl px-4 py-4 z-10">
           <div className="mx-auto max-w-3xl">
-            <div className="relative flex items-end gap-3 rounded-2xl border border-white/[0.08] bg-[#111111] p-2 focus-within:border-[#8b5cf6]/40 focus-within:ring-1 focus-within:ring-[#8b5cf6]/20 focus-within:shadow-[0_0_30px_rgba(139,92,246,0.1)] transition-all duration-300">
+            <div className="relative flex items-end gap-3 rounded-2xl border border-black/10 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111111] p-2 focus-within:border-[#14b8a6]/40 focus-within:ring-1 focus-within:ring-[#14b8a6]/20 transition-all duration-300">
               <textarea
-                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="اسأل المساعد الذكي عن الأقسام، القبول، المصاريف، أو أي شيء..."
                 rows={1}
-                className="flex-1 resize-none bg-transparent text-white placeholder-gray-600 px-3 py-2.5 text-sm focus:outline-none max-h-32"
+                className="flex-1 resize-none bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 px-3 py-2.5 text-sm focus:outline-none max-h-32"
                 style={{ direction: 'rtl' }}
               />
               <button
