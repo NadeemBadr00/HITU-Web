@@ -71,19 +71,31 @@
    Global Base Styles
    ========================================== */
 @layer base {
-  :root {
+  :root.dark {
     color-scheme: dark;
+  }
+  :root:not(.dark) {
+    color-scheme: light;
   }
 
   html {
     scroll-behavior: smooth;
   }
 
-  body {
+  /* Dark mode body (default) */
+  .dark body {
     @apply antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     background: #050505;
     color: #e2e8f0;
+  }
+
+  /* Light mode body */
+  :root:not(.dark) body {
+    @apply antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background: #f8fafc;
+    color: #1e293b;
   }
 
   /* RTL Support */
@@ -92,11 +104,181 @@
   }
 
   /* Selection */
-  ::selection {
+  .dark ::selection {
     background: rgba(45, 212, 191, 0.3);
     color: #fff;
   }
+  :root:not(.dark) ::selection {
+    background: rgba(20, 184, 166, 0.25);
+    color: #0f172a;
+  }
 }
+
+/* ==========================================
+   Light Mode Override Layer
+   Automatically flips dark hardcoded colors
+   when html does NOT have .dark class.
+   Dark mode is untouched.
+   ========================================== */
+
+:root:not(.dark) {
+
+  /* ---- Page Backgrounds ---- */
+  /* bg-[#050505], bg-[#0a0a0a] → light */
+  & [class*="bg-[#050505]"],
+  & [class*="bg-[#0a0a0a]"] {
+    background-color: #f8fafc !important;
+  }
+
+  /* bg-[#111111], bg-[#0f0f0f] → light surface */
+  & [class*="bg-[#111111]"],
+  & [class*="bg-[#0f0f0f]"],
+  & [class*="bg-[#1a1a1a]"] {
+    background-color: #ffffff !important;
+  }
+
+  /* ---- Glass Panels / Semi-transparent backgrounds ---- */
+  & [class*="bg-white/[0.03]"],
+  & [class*="bg-white/[0.02]"] {
+    background-color: rgba(255, 255, 255, 0.85) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04) !important;
+  }
+  & [class*="bg-white/[0.05]"],
+  & [class*="bg-white/[0.06]"] {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+  }
+  & [class*="bg-white/[0.08]"],
+  & [class*="bg-white/[0.1]"] {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+  }
+
+  /* Navbar/sticky transparent backgrounds */
+  & [class*="bg-[#050505]/80"],
+  & [class*="bg-[#050505]/95"] {
+    background-color: rgba(248, 250, 252, 0.85) !important;
+  }
+
+  /* ---- Borders ---- */
+  & [class*="border-white/[0.06]"],
+  & [class*="border-white/[0.08]"],
+  & [class*="border-white/[0.05]"],
+  & [class*="border-white/[0.1]"],
+  & [class*="border-white/[0.12]"] {
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* ---- Text Colors ---- */
+  /* text-white → dark */
+  & h1, & h2, & h3, & h4, & h5, & h6 {
+    color: #0f172a;
+  }
+  & [class*="text-white"] {
+    color: #0f172a !important;
+  }
+  & [class*="text-gray-100"] {
+    color: #1e293b !important;
+  }
+  & [class*="text-gray-200"] {
+    color: #334155 !important;
+  }
+  & [class*="text-gray-300"] {
+    color: #475569 !important;
+  }
+  & [class*="text-gray-400"] {
+    color: #64748b !important;
+  }
+  & [class*="text-gray-500"] {
+    color: #94a3b8 !important;
+  }
+  & [class*="text-gray-600"] {
+    color: #64748b !important;
+  }
+  & [class*="text-gray-700"] {
+    color: #94a3b8 !important;
+  }
+
+  /* ---- Gradient text: keep visible in light mode ---- */
+  & [class*="text-gradient-brand"],
+  & [class*="bg-gradient-to"] [class*="bg-clip-text"] {
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  /* ---- Shadows ---- */
+  & [class*="shadow-black"] {
+    --tw-shadow-color: rgba(0, 0, 0, 0.06) !important;
+  }
+
+  /* ---- Hover overrides ---- */
+  & [class*="hover:bg-white/[0.05]"]:hover,
+  & [class*="hover:bg-white/[0.08]"]:hover,
+  & [class*="hover:bg-white/[0.1]"]:hover {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+  }
+
+  & [class*="hover:text-white"]:hover {
+    color: #0f172a !important;
+  }
+
+  /* ---- Scrollbar ---- */
+  & .custom-scrollbar {
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  }
+  & .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+  }
+  & .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  /* ---- Mesh gradient reduce ---- */
+  & .mesh-gradient::before {
+    background: radial-gradient(ellipse at center, rgba(20, 184, 166, 0.06) 0%, transparent 70%) !important;
+  }
+
+  /* ---- Glass utility classes ---- */
+  & .glass-panel,
+  & .glass-panel-hover {
+    background: rgba(255, 255, 255, 0.7) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+  }
+  & .glass-panel-hover:hover {
+    background: rgba(255, 255, 255, 0.85) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+  }
+  & .glass-strong {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* ---- Card hover shadow ---- */
+  & .card-hover:hover {
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  /* ---- Glow effects: softer in light ---- */
+  & .glow-brand {
+    box-shadow: 0 0 15px rgba(20, 184, 166, 0.2) !important;
+  }
+  & .glow-ai {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.2) !important;
+  }
+
+  /* ---- Shimmer: lighter ---- */
+  & .shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.04) 50%, transparent 100%) !important;
+  }
+
+  /* ---- Background blurs (teal/violet decorative) ---- */
+  & [class*="bg-teal-500/[0.07]"],
+  & [class*="bg-teal-500/[0.04]"],
+  & [class*="bg-violet-500/[0.05]"],
+  & [class*="bg-violet-500/[0.04]"],
+  & [class*="bg-blue-500/[0.04]"] {
+    opacity: 0.5;
+  }
+}
+
 
 /* ==========================================
    Custom Utility Classes

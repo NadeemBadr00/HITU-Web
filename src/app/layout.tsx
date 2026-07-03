@@ -71,13 +71,12 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" className="dark" suppressHydrationWarning>
       <head>
-        <meta name="color-scheme" content="dark" />
-        <meta name="theme-color" content="#050505" />
+        <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body
-        className={`${cairo.variable} ${inter.variable} font-[family-name:var(--font-cairo)] bg-[#050505] text-gray-100 min-h-screen antialiased`}
-        style={{ colorScheme: 'dark' }}
+        className={`${cairo.variable} ${inter.variable} font-[family-name:var(--font-cairo)] min-h-screen`}
       >
         <Providers>
           <Navbar />
