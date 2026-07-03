@@ -136,36 +136,51 @@ export default function ChatbotPage() {
     setIsLoading(true);
 
     try {
-      const apiKey = getNextKey();
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [{ text: SYSTEM_PROMPT }]
-            },
-            contents: [
-              ...messages.filter(msg => msg.content !== 'عذراً، حدث خطأ في الاتصال. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.').map(msg => ({
-                role: msg.role === 'user' ? 'user' : 'model',
-                parts: [{ text: msg.content }],
-              })),
-              {
-                role: 'user',
-                parts: [{ text: text.trim() }],
-              },
-            ],
-            generationConfig: {
-              maxOutputTokens: 2048,
-              temperature: 0.7,
-            },
-          }),
-        }
-      );
+      let data = null;
+      let botText = 'عذراً، لم أتمكن من الإجابة. حاول مرة أخرى.';
+      let fetchSuccess = false;
 
-      const data = await response.json();
-      const botText = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'عذراً، لم أتمكن من الإجابة. حاول مرة أخرى.';
+      // Try up to 5 different API keys if we get errors (like 403 quota exceeded)
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const apiKey = getNextKey();
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: SYSTEM_PROMPT }]
+              },
+              contents: [
+                ...messages.filter(msg => msg.content !== 'عذراً، حدث خطأ في الاتصال. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.').map(msg => ({
+                  role: msg.role === 'user' ? 'user' : 'model',
+                  parts: [{ text: msg.content }],
+                })),
+                {
+                  role: 'user',
+                  parts: [{ text: text.trim() }],
+                },
+              ],
+              generationConfig: {
+                maxOutputTokens: 2048,
+                temperature: 0.7,
+              },
+            }),
+          }
+        );
+
+        if (response.ok) {
+          data = await response.json();
+          botText = data?.candidates?.[0]?.content?.parts?.[0]?.text || botText;
+          fetchSuccess = true;
+          break; // Success! exit loop
+        }
+      }
+
+      if (!fetchSuccess) {
+        throw new Error('All API keys failed');
+      }
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -223,8 +238,8 @@ export default function ChatbotPage() {
                   className="relative mb-8"
                 >
                   <div className="absolute inset-0 bg-white/20 dark:bg-[#14b8a6]/20 blur-2xl rounded-full animate-pulse-glow" />
-                  <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-2xl shadow-black/10 border border-black/5 dark:bg-[#111111] dark:border-white/10 p-2">
-                    <Image src="/logo.png" alt="HITU Logo" width={80} height={80} className="rounded-2xl object-contain drop-shadow-md" />
+                  <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-transparent overflow-hidden shadow-2xl shadow-black/10 p-0">
+                    <Image src="/logo.png" alt="HITU Logo" width={96} height={96} className="object-cover drop-shadow-md" />
                   </div>
                 </motion.div>
 
@@ -282,15 +297,15 @@ export default function ChatbotPage() {
                   className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   {/* Avatar */}
-                  <div className={`shrink-0 flex h-9 w-9 items-center justify-center rounded-xl shadow-lg ${
+                  <div className={`shrink-0 flex h-9 w-9 items-center justify-center shadow-lg ${
                     msg.role === 'user'
-                      ? 'bg-gradient-to-br from-[#14b8a6] to-[#0d9488] shadow-[#14b8a6]/20'
-                      : 'bg-white shadow-black/5 border border-black/5 dark:bg-[#111111] dark:border-white/10'
+                      ? 'rounded-xl bg-gradient-to-br from-[#14b8a6] to-[#0d9488] shadow-[#14b8a6]/20'
+                      : 'rounded-full bg-transparent overflow-hidden'
                   }`}>
                     {msg.role === 'user' ? (
                       <User className="h-4 w-4 text-white" />
                     ) : (
-                      <Image src="/logo.png" alt="HITU" width={24} height={24} className="rounded-md object-contain" />
+                      <Image src="/logo.png" alt="HITU" width={36} height={36} className="object-cover" />
                     )}
                   </div>
 
@@ -318,8 +333,8 @@ export default function ChatbotPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex gap-3 flex-row"
               >
-                <div className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-lg shadow-black/5 border border-black/5 dark:bg-[#111111] dark:border-white/10">
-                  <Image src="/logo.png" alt="HITU" width={24} height={24} className="rounded-md object-contain opacity-70" />
+                <div className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full bg-transparent overflow-hidden shadow-lg shadow-black/5">
+                  <Image src="/logo.png" alt="HITU" width={36} height={36} className="object-cover opacity-80" />
                 </div>
                 <div className="rounded-2xl rounded-bl-md bg-white border border-gray-100 shadow-md shadow-black/5 dark:bg-[#111111]/80 dark:backdrop-blur-xl dark:border-white/[0.08] px-5 py-4">
                   <div className="flex gap-1.5">
