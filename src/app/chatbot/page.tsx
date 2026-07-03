@@ -152,16 +152,25 @@ export default function ChatbotPage() {
               systemInstruction: {
                 parts: [{ text: SYSTEM_PROMPT }]
               },
-              contents: [
-                ...messages.filter(msg => msg.content !== 'عذراً، حدث خطأ في الاتصال. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.').map(msg => ({
-                  role: msg.role === 'user' ? 'user' : 'model',
-                  parts: [{ text: msg.content }],
-                })),
-                {
-                  role: 'user',
-                  parts: [{ text: text.trim() }],
-                },
-              ],
+              contents: (() => {
+                const history = [...messages, { role: 'user' as const, content: text.trim(), id: '', timestamp: new Date() }]
+                  .filter(msg => msg.content !== 'عذراً، حدث خطأ في الاتصال. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.');
+                
+                const formatted: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
+                for (const msg of history) {
+                  const role = msg.role === 'user' ? 'user' : 'model';
+                  if (formatted.length === 0) {
+                    if (role === 'user') formatted.push({ role, parts: [{ text: msg.content }] });
+                  } else {
+                    if (formatted[formatted.length - 1].role === role) {
+                      formatted[formatted.length - 1].parts[0].text += '\n\n' + msg.content;
+                    } else {
+                      formatted.push({ role, parts: [{ text: msg.content }] });
+                    }
+                  }
+                }
+                return formatted;
+              })(),
               generationConfig: {
                 maxOutputTokens: 2048,
                 temperature: 0.7,
